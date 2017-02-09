@@ -1,0 +1,11 @@
+gmail.username=telegram.resender@gmail.com
+gmail.password=xxx
+gmail.host=imap.gmail.com
+
+# get message every x minute
+mail.fetch.interval=5
+
+telegram.bot.token=xxx
+telegram.bot.username=EmailResenderBot
+
+sqllite3.db.name=test.db
