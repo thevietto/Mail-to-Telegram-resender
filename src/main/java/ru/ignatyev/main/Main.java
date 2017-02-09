@@ -8,19 +8,19 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.mail.Message;
-import javax.mail.MessagingException;
 
 import ru.ignatyev.service.MailService;
 import ru.ignatyev.service.TelegramService;
 
 public class Main {
 
-    public static Properties MAIN_PROPERTIES;
+    public static Properties SETTINGS;
 
     public static void main(String[] args) throws Exception {
-        MAIN_PROPERTIES = new Properties();
+        Class.forName("org.sqlite.JDBC");
+        SETTINGS = new Properties();
         try {
-            MAIN_PROPERTIES.load(new FileInputStream("settings.properties"));
+            SETTINGS.load(new FileInputStream("settings.properties"));
         } catch (IOException e) {
             System.out.println("Settings file not found");
             System.exit(0);
@@ -28,16 +28,25 @@ public class Main {
 
         MailService mailService = new MailService();
         System.out.println("Log in to mail account");
-        mailService.login(MAIN_PROPERTIES.getProperty("gmail.host"),
-                MAIN_PROPERTIES.getProperty("gmail.username"),
-                MAIN_PROPERTIES.getProperty("gmail.password"));
+        mailService.login(SETTINGS.getProperty("gmail.host"),
+                SETTINGS.getProperty("gmail.username"),
+                SETTINGS.getProperty("gmail.password"));
         System.out.println("Connected successfully!");
 
         System.out.println("Starting telegram bot");
         TelegramService telegramService = new TelegramService();
+        try {
+            telegramService.setUp(SETTINGS.getProperty("telegram.bot.username"),
+                    SETTINGS.getProperty("telegram.bot.token"),
+                    SETTINGS.getProperty("sqllite3.db.name"));
+        } catch (Exception e) {
+            System.out.println("There was an error when creating a bot");
+            e.printStackTrace();
+            System.exit(1);
+        }
         System.out.println("Bot created successfully!");
 
-        Integer interval = Integer.valueOf(MAIN_PROPERTIES.getProperty("mail.fetch.interval"));
+        Integer interval = Integer.valueOf(SETTINGS.getProperty("mail.fetch.interval"));
         System.out.println("Starting mail catcher. [Interval " + interval + " seconds]");
         ScheduledExecutorService mailCatcher = Executors.newScheduledThreadPool(1);
         mailCatcher.scheduleAtFixedRate(() -> {
