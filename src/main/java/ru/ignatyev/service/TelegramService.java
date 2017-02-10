@@ -27,7 +27,7 @@ public class TelegramService {
 
     public void processMessage(Message message) throws IOException, MessagingException {
         Object content = message.getContent();
-        String result = null;
+        String result;
         if (content instanceof MimeMultipart) {
             MimeMultipart mimeMultipart = (MimeMultipart) content;
             StringBuilder sb = new StringBuilder();
