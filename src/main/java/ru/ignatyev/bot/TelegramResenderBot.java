@@ -96,7 +96,7 @@ public class TelegramResenderBot extends TelegramLongPollingBot {
             }
         } else if ("/dislike".equals(callbackQuery.getData())) {
             if (likeDao.isAlready(LikeEventType.DISLIKE, userId, chatId, messageId)) {
-                answerCallbackQuery.setText("You already \uD83D\uDC4D this!");
+                answerCallbackQuery.setText("You already \uD83D\uDC4E this!");
             } else {
                 messageDao.decrementRating(chatId, messageId);
                 likeDao.removeEvent(LikeEventType.LIKE, userId, chatId, messageId);
