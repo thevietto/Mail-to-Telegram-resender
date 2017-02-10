@@ -86,6 +86,7 @@ public class TelegramResenderBot extends TelegramLongPollingBot {
         Integer messageId = callbackQuery.getMessage().getMessageId();
         Long chatId = callbackQuery.getMessage().getChatId();
         Integer userId = callbackQuery.getFrom().getId();
+        boolean edited = false;
         if ("/like".equals(callbackQuery.getData())) {
             if (likeDao.isAlready(LikeEventType.LIKE, userId, chatId, messageId)) {
                 answerCallbackQuery.setText("You already \uD83D\uDC4D this!");
@@ -94,6 +95,7 @@ public class TelegramResenderBot extends TelegramLongPollingBot {
                 likeDao.removeEvent(LikeEventType.DISLIKE, userId, chatId, messageId);
                 likeDao.createEvent(LikeEventType.LIKE, userId, chatId, messageId);
                 answerCallbackQuery.setText("You \uD83D\uDC4D this!");
+                edited = true;
             }
         } else if ("/dislike".equals(callbackQuery.getData())) {
             if (likeDao.isAlready(LikeEventType.DISLIKE, userId, chatId, messageId)) {
@@ -103,25 +105,33 @@ public class TelegramResenderBot extends TelegramLongPollingBot {
                 likeDao.removeEvent(LikeEventType.LIKE, userId, chatId, messageId);
                 likeDao.createEvent(LikeEventType.DISLIKE, userId, chatId, messageId);
                 answerCallbackQuery.setText("You \uD83D\uDC4E this!");
+                edited = true;
             }
         }
 
-        EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
-        editMessageReplyMarkup.setChatId(chatId);
-        editMessageReplyMarkup.setMessageId(messageId);
-        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-        List<InlineKeyboardButton> buttons = new ArrayList<>();
-        buttons.add(new InlineKeyboardButton().setText("\uD83D\uDC4D "
-                + likeDao.count(LikeEventType.LIKE, chatId, messageId))
-                .setCallbackData("/like"));
-        buttons.add(new InlineKeyboardButton().setText("\uD83D\uDC4E "
-                + likeDao.count(LikeEventType.DISLIKE, chatId, messageId))
-                .setCallbackData("/dislike"));
-        inlineKeyboardMarkup.setKeyboard(Collections.singletonList(buttons));
-        editMessageReplyMarkup.setReplyMarkup(inlineKeyboardMarkup);
+        if (edited) {
+            EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
+            editMessageReplyMarkup.setChatId(chatId);
+            editMessageReplyMarkup.setMessageId(messageId);
+            InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+            List<InlineKeyboardButton> buttons = new ArrayList<>();
+            buttons.add(new InlineKeyboardButton().setText("\uD83D\uDC4D "
+                    + likeDao.count(LikeEventType.LIKE, chatId, messageId))
+                    .setCallbackData("/like"));
+            buttons.add(new InlineKeyboardButton().setText("\uD83D\uDC4E "
+                    + likeDao.count(LikeEventType.DISLIKE, chatId, messageId))
+                    .setCallbackData("/dislike"));
+            inlineKeyboardMarkup.setKeyboard(Collections.singletonList(buttons));
+            editMessageReplyMarkup.setReplyMarkup(inlineKeyboardMarkup);
+            try {
+                editMessageReplyMarkup(editMessageReplyMarkup);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
+        }
+
         try {
             answerCallbackQuery(answerCallbackQuery);
-            editMessageReplyMarkup(editMessageReplyMarkup);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
