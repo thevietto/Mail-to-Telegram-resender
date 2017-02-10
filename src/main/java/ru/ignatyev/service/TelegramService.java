@@ -45,7 +45,7 @@ public class TelegramService {
         } else {
             result = content.toString();
         }
-        bot.broadcast(remark.convert(result));
+        bot.broadcast(remark.convert(result).replace("\\#", "#"));
     }
 
 }
