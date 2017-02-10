@@ -14,15 +14,19 @@ import javax.mail.internet.MimeMultipart;
 import java.io.IOException;
 import java.sql.SQLException;
 
+import com.overzealous.remark.Remark;
+
 public class TelegramService {
 
     private TelegramResenderBot bot;
+    private Remark remark;
 
     public void setUp(String botName, String botToken, String dbName) throws TelegramApiRequestException, SQLException {
         ApiContextInitializer.init();
         TelegramBotsApi botsApi = new TelegramBotsApi();
         bot = new TelegramResenderBot(botName, botToken, dbName);
         botsApi.registerBot(bot);
+        remark = new Remark();
     }
 
     public void processMessage(Message message) throws IOException, MessagingException {
@@ -41,8 +45,7 @@ public class TelegramService {
         } else {
             result = content.toString();
         }
-        bot.broadcast(result);
-
+        bot.broadcast(remark.convert(result));
     }
 
 }

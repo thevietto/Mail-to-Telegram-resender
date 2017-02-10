@@ -1,6 +1,7 @@
 package ru.ignatyev.bot;
 
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
+import org.telegram.telegrambots.api.methods.ParseMode;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.api.objects.CallbackQuery;
@@ -153,6 +154,7 @@ public class TelegramResenderBot extends TelegramLongPollingBot {
         inlineKeyboardMarkup.setKeyboard(Collections.singletonList(buttons));
         for (Long chatId : subscribersList) {
             SendMessage message = new SendMessage();
+            message.setParseMode(ParseMode.MARKDOWN);
             message.setChatId(chatId)
                     .setText(messageText)
                     .setReplyMarkup(inlineKeyboardMarkup);
