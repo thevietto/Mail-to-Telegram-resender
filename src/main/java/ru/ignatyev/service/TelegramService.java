@@ -6,8 +6,11 @@ import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
 import ru.ignatyev.bot.TelegramResenderBot;
 
+import javax.mail.BodyPart;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.internet.MimeMultipart;
+
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -23,7 +26,23 @@ public class TelegramService {
     }
 
     public void processMessage(Message message) throws IOException, MessagingException {
-        bot.broadcast(message.getContent().toString());
+        Object content = message.getContent();
+        String result = null;
+        if (content instanceof MimeMultipart) {
+            MimeMultipart mimeMultipart = (MimeMultipart) content;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < mimeMultipart.getCount(); i++) {
+                BodyPart bodyPart = mimeMultipart.getBodyPart(i);
+                if (bodyPart.getContentType().startsWith("TEXT/PLAIN")) {
+                    sb.append(bodyPart.getContent().toString());
+                }
+            }
+            result = sb.toString();
+        } else {
+            result = content.toString();
+        }
+        bot.broadcast(result);
+
     }
 
 }

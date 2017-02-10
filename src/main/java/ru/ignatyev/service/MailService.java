@@ -15,25 +15,21 @@ import java.util.concurrent.Executors;
 public class MailService {
 
     private Session session;
-    private Store store;
     private IMAPFolder folder;
 
-    private String protocol = "imaps";
-    private String file = "INBOX";
     private ExecutorService es;
 
-    /**
-     * to login to the mail host server
-     */
     public void login(String host, String username, String password)
             throws Exception {
+        String protocol = "imaps";
+        String file = "INBOX";
         URLName url = new URLName(protocol, host, 993, file, username, password);
         es = Executors.newCachedThreadPool();
         if (session == null) {
             Properties props;
             try {
                 props = System.getProperties();
-                props.put("mail.event.scope", "session"); // or "application"
+                props.put("mail.event.scope", "session");
                 props.put("mail.event.executor", es);
                 props.put("mail.imaps.usesocketchannels", "true");
             } catch (SecurityException sex) {
@@ -41,7 +37,7 @@ public class MailService {
             }
             session = Session.getInstance(props, null);
         }
-        store = session.getStore(url);
+        Store store = session.getStore(url);
         store.connect();
         folder = (IMAPFolder) store.getFolder(url);
 

@@ -6,21 +6,23 @@ import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageReplyMa
 import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
-import org.telegram.telegrambots.api.objects.User;
 import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
 import ru.ignatyev.dao.LikeDao;
 import ru.ignatyev.dao.LikeEventType;
 import ru.ignatyev.dao.MessageDao;
 import ru.ignatyev.dao.SubscribersDao;
-
-import java.sql.SQLException;
-import java.util.*;
-import java.util.function.Consumer;
-
 
 public class TelegramResenderBot extends TelegramLongPollingBot {
 
@@ -50,12 +52,7 @@ public class TelegramResenderBot extends TelegramLongPollingBot {
             }
             sendMessageSafe(message);
         });
-        put("/test", m -> {
-            broadcast("TEST TEXT");
-        });
     }};
-
-//    private Map<String, Consumer<>> callbacks
 
     public TelegramResenderBot(String botUsername, String botToken, String dbName) throws SQLException {
         this.botUsername = botUsername;
