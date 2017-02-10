@@ -22,7 +22,7 @@ public class MailService {
     public void login(String host, String username, String password)
             throws Exception {
         String protocol = "imaps";
-        String file = "INBOX";
+        String file = "SourceForm";
         URLName url = new URLName(protocol, host, 993, file, username, password);
         es = Executors.newCachedThreadPool();
         if (session == null) {
