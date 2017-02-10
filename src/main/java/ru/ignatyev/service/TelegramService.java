@@ -4,14 +4,12 @@ package ru.ignatyev.service;
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.TelegramBotsApi;
 import org.telegram.telegrambots.exceptions.TelegramApiRequestException;
-
-import java.io.IOException;
-import java.sql.SQLException;
+import ru.ignatyev.bot.TelegramResenderBot;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
-
-import ru.ignatyev.bot.TelegramResenderBot;
+import java.io.IOException;
+import java.sql.SQLException;
 
 public class TelegramService {
 
@@ -25,7 +23,7 @@ public class TelegramService {
     }
 
     public void processMessage(Message message) throws IOException, MessagingException {
-       bot.broadcast(message.getContent().toString());
+        bot.broadcast(message.getContent().toString());
     }
 
 }
