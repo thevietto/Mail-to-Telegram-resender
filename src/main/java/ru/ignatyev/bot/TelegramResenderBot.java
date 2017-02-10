@@ -2,13 +2,19 @@ package ru.ignatyev.bot;
 
 import org.telegram.telegrambots.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
+import org.telegram.telegrambots.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
+import org.telegram.telegrambots.api.objects.User;
 import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
+
+import ru.ignatyev.dao.LikeDao;
+import ru.ignatyev.dao.LikeEventType;
+import ru.ignatyev.dao.MessageDao;
 import ru.ignatyev.dao.SubscribersDao;
 
 import java.sql.SQLException;
@@ -21,6 +27,8 @@ public class TelegramResenderBot extends TelegramLongPollingBot {
     private final String botUsername;
     private final String botToken;
     private SubscribersDao subscribersDao;
+    private MessageDao messageDao;
+    private LikeDao likeDao;
 
     private Map<String, Consumer<Message>> actions = new HashMap<String, Consumer<Message>>() {{
         put("/subscribe", m -> {
@@ -42,7 +50,7 @@ public class TelegramResenderBot extends TelegramLongPollingBot {
             }
             sendMessageSafe(message);
         });
-        put("test", m -> {
+        put("/test", m -> {
             broadcast("TEST TEXT");
         });
     }};
@@ -53,6 +61,8 @@ public class TelegramResenderBot extends TelegramLongPollingBot {
         this.botUsername = botUsername;
         this.botToken = botToken;
         subscribersDao = new SubscribersDao(dbName);
+        messageDao = new MessageDao(dbName);
+        likeDao = new LikeDao(dbName);
     }
 
     @Override
@@ -71,13 +81,47 @@ public class TelegramResenderBot extends TelegramLongPollingBot {
             return;
         }
 
-        callbackQuery.getFrom().getId(); // user
-        callbackQuery.getMessage().getMessageId(); //message
-        callbackQuery.getData(); // command
         AnswerCallbackQuery answerCallbackQuery = new AnswerCallbackQuery()
-                .setCallbackQueryId(callbackQuery.getId()).setText("Cool! \uD83D\uDC4D");
+                .setCallbackQueryId(callbackQuery.getId());
+        Integer messageId = callbackQuery.getMessage().getMessageId();
+        Long chatId = callbackQuery.getMessage().getChatId();
+        Integer userId = callbackQuery.getFrom().getId();
+        if ("/like".equals(callbackQuery.getData())) {
+            if (likeDao.isAlready(LikeEventType.LIKE, userId, chatId, messageId)) {
+                answerCallbackQuery.setText("You already \uD83D\uDC4D this!");
+            } else {
+                messageDao.incrementRating(chatId, messageId);
+                likeDao.removeEvent(LikeEventType.DISLIKE, userId, chatId, messageId);
+                likeDao.createEvent(LikeEventType.LIKE, userId, chatId, messageId);
+                answerCallbackQuery.setText("You \uD83D\uDC4D this!");
+            }
+        } else if ("/dislike".equals(callbackQuery.getData())) {
+            if (likeDao.isAlready(LikeEventType.DISLIKE, userId, chatId, messageId)) {
+                answerCallbackQuery.setText("You already \uD83D\uDC4D this!");
+            } else {
+                messageDao.decrementRating(chatId, messageId);
+                likeDao.removeEvent(LikeEventType.LIKE, userId, chatId, messageId);
+                likeDao.createEvent(LikeEventType.DISLIKE, userId, chatId, messageId);
+                answerCallbackQuery.setText("You \uD83D\uDC4E this!");
+            }
+        }
+
+        EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
+        editMessageReplyMarkup.setChatId(chatId);
+        editMessageReplyMarkup.setMessageId(messageId);
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<InlineKeyboardButton> buttons = new ArrayList<>();
+        buttons.add(new InlineKeyboardButton().setText("\uD83D\uDC4D "
+                + likeDao.count(LikeEventType.LIKE, chatId, messageId))
+                .setCallbackData("/like"));
+        buttons.add(new InlineKeyboardButton().setText("\uD83D\uDC4E "
+                + likeDao.count(LikeEventType.DISLIKE, chatId, messageId))
+                .setCallbackData("/dislike"));
+        inlineKeyboardMarkup.setKeyboard(Collections.singletonList(buttons));
+        editMessageReplyMarkup.setReplyMarkup(inlineKeyboardMarkup);
         try {
             answerCallbackQuery(answerCallbackQuery);
+            editMessageReplyMarkup(editMessageReplyMarkup);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
@@ -97,23 +141,27 @@ public class TelegramResenderBot extends TelegramLongPollingBot {
         List<Long> subscribersList = subscribersDao.getSubscribersList();
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<InlineKeyboardButton> buttons = new ArrayList<>();
-        buttons.add(new InlineKeyboardButton().setText("\uD83D\uDC4D").setCallbackData("/like"));
-        buttons.add(new InlineKeyboardButton().setText("\uD83D\uDC4E").setCallbackData("/dislike"));
+        buttons.add(new InlineKeyboardButton().setText("\uD83D\uDC4D 0").setCallbackData("/like"));
+        buttons.add(new InlineKeyboardButton().setText("\uD83D\uDC4E 0").setCallbackData("/dislike"));
         inlineKeyboardMarkup.setKeyboard(Collections.singletonList(buttons));
         for (Long chatId : subscribersList) {
             SendMessage message = new SendMessage();
             message.setChatId(chatId)
                     .setText(messageText)
                     .setReplyMarkup(inlineKeyboardMarkup);
-            sendMessageSafe(message);
+            Message sent = sendMessageSafe(message);
+            if (sent != null) {
+                messageDao.createMessage(sent.getChatId(), sent.getMessageId());
+            }
         }
     }
 
-    private void sendMessageSafe(SendMessage message) {
+    private Message sendMessageSafe(SendMessage message) {
         try {
-            sendMessage(message);
+            return sendMessage(message);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+        return null;
     }
 }
