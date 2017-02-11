@@ -17,3 +17,5 @@ target/
 
 settings.properties
 *.db
+
+app.jar
