@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class MailService {
 
@@ -18,6 +20,7 @@ public class MailService {
     private IMAPFolder folder;
 
     private ExecutorService es;
+    private ScheduledExecutorService scheduler;
 
     public void login(String host, String username, String password)
             throws Exception {
@@ -25,6 +28,7 @@ public class MailService {
         String file = "SourceForm";
         URLName url = new URLName(protocol, host, 993, file, username, password);
         es = Executors.newCachedThreadPool();
+        scheduler = Executors.newSingleThreadScheduledExecutor();
         if (session == null) {
             Properties props;
             try {
@@ -60,7 +64,18 @@ public class MailService {
                 }
             }
         });
+        folder.idle();
         idleManager.watch(folder);
-    }
 
+        scheduler.scheduleWithFixedDelay(() -> {
+            try {
+                folder.doCommand(p -> {
+                    p.simpleCommand("NOOP", null);
+                    return null;
+                });
+            } catch (MessagingException e) {
+                e.printStackTrace();
+            }
+        }, 4, 4, TimeUnit.MINUTES);
+    }
 }
