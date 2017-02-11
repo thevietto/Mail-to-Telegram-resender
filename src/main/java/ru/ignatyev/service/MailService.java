@@ -64,7 +64,6 @@ public class MailService {
                 }
             }
         });
-        folder.idle();
         idleManager.watch(folder);
 
         scheduler.scheduleWithFixedDelay(() -> {
